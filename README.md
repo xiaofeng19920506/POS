@@ -78,3 +78,81 @@ docker compose up -d --build  # 更新代码后重建
 ```
 
 把 `SEED_ON_START` 改为 `false` 可避免以后误触种子逻辑；已写入过的数据目录有 `/data/.seeded` 标记，默认也不会重复清空。
+
+## 飞牛 NAS（fnOS）部署步骤
+
+飞牛桌面打开 **Docker** → 左侧 **Compose**。
+
+### 1. 准备目录
+
+在文件管理里建（名称建议英文）：
+
+- `Docker/pos` — 放项目代码
+- `Docker/pos/data` — 放数据库
+
+右键 `pos` 文件夹看**属性**，记下绝对路径（常见类似 `/vol1/1000/Docker/pos`，以你机器为准）。
+
+### 2. 放入代码
+
+任选其一：
+
+- **SSH**（推荐）：
+
+```bash
+cd /vol1/1000/Docker   # 改成你的路径
+git clone https://github.com/xiaofeng19920506/POS.git pos
+cd pos
+mkdir -p data
+```
+
+- 或在电脑下载仓库 ZIP，解压内容放进 `Docker/pos`（需包含 `Dockerfile`、`package.json`、`src` 等，不能只放一个 yml）。
+
+### 3. 写环境变量
+
+在 `Docker/pos` 下新建文件 `.env`：
+
+```env
+AUTH_SECRET=换成很长的随机字符串
+SEED_ON_START=true
+TZ=America/New_York
+```
+
+### 4. 改数据目录映射
+
+编辑 `docker-compose.fnos.yml`，把卷路径改成你的真实路径，例如：
+
+```yaml
+- /vol1/1000/Docker/pos/data:/data
+```
+
+### 5. 用 Compose 启动
+
+**方式 A — 飞牛界面**
+
+1. Docker → Compose → **新增项目**
+2. 名称：`pos`
+3. 路径：选 `Docker/pos` 这个文件夹
+4. 若界面要求 compose 文件：选已有的 `docker-compose.fnos.yml`，或把内容复制进去  
+   （若界面固定读 `docker-compose.yml`，可把 `docker-compose.fnos.yml` 改名为 `docker-compose.yml`，并改好里面的 `/data` 映射）
+5. 勾选创建后启动 → 等待**本地构建**（第一次可能较久，要下载 Node 并编译）
+
+**方式 B — SSH**
+
+```bash
+cd /vol1/1000/Docker/pos
+docker compose -f docker-compose.fnos.yml up -d --build
+```
+
+### 6. 访问
+
+浏览器打开：`http://飞牛的局域网IP:3000`  
+演示账号：工号 `1001`，PIN `1234`
+
+平板/iPad 用同一 WiFi，把该地址「添加到主屏幕」即可当 PWA 用。
+
+### 飞牛注意点
+
+- 必须用**完整源码 + build**，不能只贴一个镜像名（当前仓库尚未发布到 Docker Hub）。
+- 构建吃内存：建议 NAS 可用内存 ≥ 4GB；失败时先停掉其它容器再构建。
+- 端口 `3000` 若冲突，把 compose 里改成 `"3080:3000"`，访问时用 `3080`。
+- 更新代码：`git pull` 后再 `docker compose -f docker-compose.fnos.yml up -d --build`。

@@ -1,0 +1,22 @@
+# 飞牛 NAS（fnOS）推荐配置
+# 用法：把整个仓库放到例如 /vol1/1000/Docker/pos
+# 再在飞牛 Docker → Compose → 新增项目，路径选该目录，或 SSH 执行：
+#   docker compose -f docker-compose.fnos.yml up -d --build
+
+services:
+  pos:
+    build: .
+    container_name: pos
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: file:/data/pos.db
+      AUTH_SECRET: ${AUTH_SECRET:-please-change-this-secret}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      # 改成你飞牛上的真实路径（文件管理里对文件夹「属性」可看绝对路径）
+      - /vol1/1000/Docker/pos/data:/data
+    restart: unless-stopped
+
+# 不使用命名卷，数据直接落在飞牛共享目录，方便备份
