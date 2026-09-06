@@ -1,0 +1,33 @@
+services:
+  pos:
+    build: .
+    container_name: pos
+    ports:
+      # 左边可改成 NAS 上你想暴露的端口，例如 3080:3000
+      - "3000:3000"
+    environment:
+      DATABASE_URL: file:/data/pos.db
+      # 务必改成自己的长随机字符串
+      AUTH_SECRET: ${AUTH_SECRET:-please-change-this-secret}
+      # 首次启动写入演示菜单/员工；写完后会打标记，不会重复清空数据
+      SEED_ON_START: ${SEED_ON_START:-true}
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      # 数据库持久化到 NAS 目录；Synology 可改成 /volume1/docker/pos/data
+      - pos-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  pos-data:
