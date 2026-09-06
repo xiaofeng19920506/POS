@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CASHIER
+  SERVER
+  KITCHEN
+  MANAGER
+}
+
+enum TableStatus {
+  available
+  occupied
+  reserved
+  dirty
+  billing
+}
+
+enum TableShape {
+  round
+  square
+}
+
+enum OrderStatus {
+  open
+  sent
+  ready
+  paid
+  void
+}
+
+enum OrderItemStatus {
+  pending
+  sent
+  ready
+  void
+}
+
+enum PaymentMethod {
+  cash
+  card
+  other
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  displayName String   @default("POS")
+  primaryColor String  @default("#1B4D3E")
+  accentColor String   @default("#C4A35A")
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  floorPlans  FloorPlan[]
+  staff       Staff[]
+  categories  Category[]
+  orders      Order[]
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  employeeId String
+  name      String
+  pinHash   String
+  role      Role     @default(SERVER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+  auditLogs AuditLog[]
+
+  @@unique([storeId, employeeId])
+}
+
+model FloorPlan {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String   @default("Main Floor")
+  aspectW   Int      @default(16)
+  aspectH   Int      @default(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tables    Table[]
+}
+
+model Table {
+  id          String      @id @default(cuid())
+  floorPlanId String
+  floorPlan   FloorPlan   @relation(fields: [floorPlanId], references: [id], onDelete: Cascade)
+  name        String
+  number      String
+  xPct        Float
+  yPct        Float
+  wPct        Float       @default(8)
+  hPct        Float       @default(12)
+  shape       TableShape  @default(round)
+  seats       Int         @default(4)
+  status      TableStatus @default(available)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orders      Order[]
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  storeId   String
+  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int        @default(0)
+  active    Boolean    @default(true)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceCents  Int
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  modifiers   ModifierGroup[]
+  orderItems  OrderItem[]
+}
+
+model ModifierGroup {
+  id         String     @id @default(cuid())
+  menuItemId String
+  menuItem   MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name       String
+  required   Boolean    @default(false)
+  minSelect  Int        @default(0)
+  maxSelect  Int        @default(1)
+  options    ModifierOption[]
+}
+
+model ModifierOption {
+  id              String        @id @default(cuid())
+  modifierGroupId String
+  modifierGroup   ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  name            String
+  priceCents      Int           @default(0)
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  storeId      String
+  store        Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  tableId      String?
+  table        Table?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  staffId      String?
+  staff        Staff?      @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  status       OrderStatus @default(open)
+  guestCount   Int         @default(1)
+  discountCents Int        @default(0)
+  note         String?
+  sentAt       DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  items        OrderItem[]
+  payments     Payment[]
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId  String?
+  menuItem    MenuItem?       @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  name        String
+  unitCents   Int
+  quantity    Int             @default(1)
+  modifiersJson String        @default("[]")
+  note        String?
+  status      OrderItemStatus @default(pending)
+  sentAt      DateTime?
+  readyAt     DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method      PaymentMethod
+  amountCents Int
+  createdAt   DateTime      @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  staffId   String?
+  staff     Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+}

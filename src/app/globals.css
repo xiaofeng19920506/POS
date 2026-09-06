@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --brand-primary: #1b4d3e;
+  --brand-accent: #c4a35a;
+  --brand-surface: #f3efe6;
+  --brand-surface-alt: #e7e0d2;
+  --brand-ink: #1a1a1a;
+  --brand-muted: #5c5c5c;
+  --background: var(--brand-surface);
+  --foreground: var(--brand-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-ticket,
+  .print-ticket * {
+    visibility: visible;
+  }
+  .print-ticket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+  }
+}

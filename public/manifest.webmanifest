@@ -1,0 +1,18 @@
+{
+  "name": "POS 餐饮收银",
+  "short_name": "POS",
+  "description": "门店桌台图、点餐与后厨收银系统",
+  "start_url": "/floor",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F3EFE6",
+  "theme_color": "#1B4D3E",
+  "icons": [
+    {
+      "src": "/brand-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
